@@ -62,7 +62,8 @@ jobs:
         with:
           # context:    .containers/${{ matrix.role }}
           context:    "{{defaultContext}}:.containers/${{ matrix.role }}"
-          file:       .containers/${{ matrix.role }}/Containerfile
+          # file:       .containers/${{ matrix.role }}/Containerfile
+          file:       Containerfile
           # platforms: linux/amd64,linux/arm64
           platforms:  linux/amd64
           push:       ${{ github.event_name != 'pull_request' }}
