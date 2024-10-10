@@ -1,0 +1,49 @@
+FROM ubuntu:24.04 AS build
+
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    memcached
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    rsync
+
+# Prep the packaged directories.
+RUN mkdir -p /rootfs/etc
+RUN mkdir -p /rootfs/run
+RUN mkdir -p /rootfs/usr/lib
+RUN mkdir -p /rootfs/var/log/mariadb
+
+# Prepare special-mode directories.
+RUN mkdir -p -m 1777 /rootfs/tmp
+RUN mkdir -p -m 1777 /rootfs/run/lock
+RUN mkdir -p -m 1777 /rootfs/var/tmp
+
+# Package default files/symlinks.
+RUN cp    /etc/group   /rootfs/etc/group
+RUN cp    /etc/passwd  /rootfs/etc/passwd
+RUN cp -r /usr/lib64   /rootfs/usr/lib64
+
+RUN ln -s usr/lib      /rootfs/lib
+RUN ln -s usr/lib64    /rootfs/lib64
+RUN ln -s /run         /rootfs/var/run
+RUN ln -s /run/lock    /rootfs/var/lock
+
+# Package up the libraries.
+RUN cp -r --parents /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /rootfs
+RUN ldd /usr/bin/memcached                                                 | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
+RUN find /rootfs -xtype l -exec readlink -f '{}' \; |sed -E 's@^/rootfs@@' | awk 'NF == 1 { system("rsync --links --perms --times --ignore-existing --relative " $1 " /rootfs") }'
+
+RUN mkdir -p /rootfs/run/memcached && chown memcache /rootfs/run/memcached
+
+FROM scratch
+LABEL role=memcached
+LABEL version=1.6.24
+
+COPY --from=build /rootfs                  /
+COPY --from=build /etc/default/memcached   /etc/default/memcached
+COPY --from=build /etc/memcached.conf      /etc/memcached.conf
+COPY --from=build /usr/bin/memcached       /usr/bin/memcached
+
+EXPOSE 11211
+USER memcache
+ENTRYPOINT [ "/usr/bin/memcached" ]

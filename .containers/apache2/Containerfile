@@ -1,0 +1,81 @@
+FROM ubuntu:24.04 AS build
+
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    apache2
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    rsync
+
+# Prep the packaged directories.
+RUN mkdir -p /rootfs/etc
+RUN mkdir -p /rootfs/run
+RUN mkdir -p /rootfs/usr/lib
+RUN mkdir -p /rootfs/var/log/apache2
+
+# Prepare special-mode directories.
+RUN mkdir -p -m 1777 /rootfs/tmp
+RUN mkdir -p -m 1777 /rootfs/run/lock
+RUN mkdir -p -m 1777 /rootfs/var/tmp
+
+# Package default files/symlinks.
+RUN cp    /etc/group   /rootfs/etc/group
+RUN cp    /etc/passwd  /rootfs/etc/passwd
+RUN cp -r /usr/lib64   /rootfs/usr/lib64
+
+RUN ln -s usr/lib      /rootfs/lib
+RUN ln -s usr/lib64    /rootfs/lib64
+RUN ln -s /run         /rootfs/var/run
+RUN ln -s /run/lock    /rootfs/var/lock
+
+# Package up required shell utilities.
+RUN ln -s usr/bin /rootfs/bin
+RUN mkdir -p /rootfs/usr/bin
+RUN cp --parents /usr/bin/awk \
+                 /usr/bin/chown \
+                 /usr/bin/chmod \
+                 /usr/bin/id \
+                 /usr/bin/mkdir \
+                 /usr/bin/mktemp \
+                 /usr/bin/mv \
+                 /usr/bin/readlink \
+                 /usr/bin/rmdir \
+                 /usr/bin/sh \
+                 /usr/bin/stat \
+                 /rootfs
+
+# Package up the libraries.
+RUN cp -r --parents /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /rootfs
+RUN cp -r --parents /usr/lib/apache2 /rootfs
+RUN ldd /usr/sbin/apache2                                          | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
+RUN find /usr/lib/apache2/ -type f -name '*.so*' -exec ldd '{}' \; | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
+RUN find /rootfs/usr/bin/  -type f               -exec ldd '{}' \; | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
+
+# Resolve missing symlinks
+RUN find /rootfs -xtype l -exec readlink -f '{}' \; |sed -E 's@^/rootfs@@' | awk 'NF == 1 {system("rsync --links --perms --times --ignore-existing --relative " $1 " /rootfs") }'
+
+# Apache requires the mime definitions from etc.
+RUN cp --parents /etc/mime.types /rootfs
+
+RUN mkdir -p /rootfs/run/apache2 && chown www-data:www-data /rootfs/run/apache2
+RUN mkdir -p /rootfs/var/www/html && chown www-data:www-data /rootfs/var/www/html
+
+# Redirect default logs to stdout/stderr.
+RUN ln -sf /dev/stdout /rootfs/var/log/apache2/access.log && \
+    ln -sf /dev/stderr /rootfs/var/log/apache2/error.log
+
+FROM scratch
+LABEL role=apache2
+LABEL version=2.4.58
+
+COPY --from=build /rootfs              /
+COPY --from=build /etc/apache2         /etc/apache2
+COPY --from=build /usr/sbin/apache2    /usr/sbin/apache2
+COPY --from=build /usr/sbin/apache2ctl /usr/sbin/apache2ctl
+COPY --from=build /usr/share/apache2   /usr/share/apache2
+COPY --from=build /var/log/apache2     /var/log/apache2
+
+EXPOSE 80
+EXPOSE 443
+
+ENTRYPOINT [ "/usr/sbin/apache2ctl", "-D", "FOREGROUND" ]

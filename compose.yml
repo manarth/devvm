@@ -1,0 +1,32 @@
+---
+services:
+
+  development:
+    container_name: development
+    build:
+      context: .containers/development
+      dockerfile: Containerfile
+
+  apache2:
+    container_name: apache2
+    build:
+      context: .containers/apache2
+      dockerfile: Containerfile
+
+  phpfpm:
+    container_name: phpfpm
+    build:
+      context: .containers/phpfpm
+      dockerfile: Containerfile
+
+  mariadb:
+    container_name: mariadb
+    build:
+      context: .containers/mariadb
+      dockerfile: Containerfile
+
+  memcached:
+    container_name: memcached
+    build:
+      context: .containers/memcached
+      dockerfile: Containerfile

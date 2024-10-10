@@ -1,0 +1,136 @@
+FROM ubuntu:24.04 AS build
+
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    php8.3-apcu \
+    php8.3-bcmath \
+    php8.3-bz2 \
+    php8.3-common \
+    php8.3-curl \
+    php8.3-enchant \
+    php8.3-fpm \
+    php8.3-gd \
+    php8.3-gearman \
+    php8.3-gmp \
+    php8.3-gnupg \
+    php8.3-igbinary \
+    php8.3-imagick \
+    php8.3-imap \
+    php8.3-intl \
+    php8.3-ldap \
+    php8.3-mailparse \
+    php8.3-maxminddb \
+    php8.3-mbstring \
+    php8.3-mcrypt \
+    php8.3-memcache \
+    php8.3-memcached \
+    php8.3-mongodb \
+    php8.3-msgpack \
+    php8.3-mysql \
+    php8.3-oauth \
+    php8.3-odbc \
+    php8.3-opcache \
+    php8.3-pcov \
+    php8.3-ps \
+    php8.3-pspell \
+    php8.3-psr \
+    php8.3-readline \
+    php8.3-redis \
+    php8.3-smbclient \
+    php8.3-soap \
+    php8.3-solr \
+    php8.3-sqlite3 \
+    php8.3-ssh2 \
+    php8.3-stomp \
+    php8.3-sybase \
+    php8.3-tideways \
+    php8.3-tidy \
+    php8.3-uploadprogress \
+    php8.3-uuid \
+    php8.3-xdebug \
+    php8.3-xml \
+    php8.3-xmlrpc \
+    php8.3-xsl \
+    php8.3-yaml \
+    php8.3-zip \
+    php8.3-zmq
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    rsync
+
+# Prep the packaged directories.
+RUN mkdir -p /rootfs/etc
+RUN mkdir -p /rootfs/run/php
+RUN mkdir -p /rootfs/usr/lib
+RUN mkdir -p /rootfs/var/log
+
+# Prepare special-mode directories.
+RUN mkdir -p -m 1777 /rootfs/tmp
+RUN mkdir -p -m 1777 /rootfs/run/lock
+RUN mkdir -p -m 1777 /rootfs/var/tmp
+
+# Package default files/symlinks.
+RUN cp    /etc/group   /rootfs/etc/group
+RUN cp    /etc/passwd  /rootfs/etc/passwd
+RUN cp -r /usr/lib64   /rootfs/usr/lib64
+
+RUN ln -s usr/lib      /rootfs/lib
+RUN ln -s usr/lib64    /rootfs/lib64
+RUN ln -s /run         /rootfs/var/run
+RUN ln -s /run/lock    /rootfs/var/lock
+
+# Package up required shell utilities.
+RUN ln -s usr/bin /rootfs/bin
+RUN mkdir -p /rootfs/usr/bin
+RUN cp --parents /usr/bin/awk \
+                 /usr/bin/chown \
+                 /usr/bin/chmod \
+                 /usr/bin/find \
+                 /usr/bin/id \
+                 /usr/bin/mkdir \
+                 /usr/bin/mktemp \
+                 /usr/bin/mv \
+                 /usr/bin/readlink \
+                 /usr/bin/rmdir \
+                 /usr/bin/sed \
+                 /usr/bin/sh \
+                 /usr/bin/stat \
+                 /usr/bin/update-alternatives \
+                 /rootfs
+
+# Package up the libraries.
+RUN cp -r --parents /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /rootfs
+RUN cp -r --parents /usr/lib/php /rootfs
+RUN ldd /usr/sbin/php-fpm8.3                                   | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
+RUN find /usr/lib/php/ -type f -name '*.so*' -exec ldd '{}' \; | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
+RUN find /rootfs/usr/bin/ -type f            -exec ldd '{}' \; | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
+
+# Resolve missing symlinks
+RUN find /rootfs -xtype l -exec readlink -f '{}' \; |sed -E 's@^/rootfs@@' | awk 'NF == 1 {system("rsync --links --perms --times --ignore-existing --relative " $1 " /rootfs") }'
+
+RUN mkdir -p /rootfs/var/www/html && chown www-data:www-data /rootfs/var/www/html
+
+RUN ln -s /dev/shm /rootfs/run/shm
+RUN touch /rootfs/var/log/php8.3-fpm.log && chown www-data:www-data /rootfs/var/log/php8.3-fpm.log
+RUN chown www-data:www-data /rootfs/run/php
+
+
+FROM scratch
+LABEL role=phpfpm
+LABEL version=8.3
+
+COPY --from=build /rootfs/             /
+COPY --from=build /etc/php/            /etc/php/
+COPY --from=build /usr/lib/php         /usr/lib/php
+COPY --from=build /usr/sbin/php-fpm8.3 /usr/sbin/php-fpm8.3
+COPY --from=build /usr/sbin/phpquery   /usr/sbin/phpquery
+COPY --from=build /usr/sbin/phpdismod  /usr/sbin/phpdismod
+COPY --from=build /usr/sbin/phpenmod   /usr/sbin/phpenmod
+COPY --from=build /var/lib/php         /var/lib/php
+COPY --from=build /usr/share/zoneinfo  /usr/share/zoneinfo
+
+USER www-data
+EXPOSE 9000
+
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/usr/sbin/php-fpm8.3", "--nodaemonize", "--force-stderr"]
