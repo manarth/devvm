@@ -13,7 +13,6 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
-
 jobs:
   build:
 
@@ -55,13 +54,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5.5.1
         with:
-          images: ${{ github.actor }}/vm-${{ matrix.role }}
+          images: ${{ env.REGISTRY }}/${{ github.actor }}/vm-${{ matrix.role }}
 
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v6.9.0
         with:
-          context:    .containers/${{ matrix.role }}
+          # context:    .containers/${{ matrix.role }}
+          context:    "{{defaultContext}}:.containers/${{ matrix.role }}"
           file:       .containers/${{ matrix.role }}/Containerfile
           # platforms: linux/amd64,linux/arm64
           platforms:  linux/amd64
