@@ -15,9 +15,7 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
@@ -60,9 +58,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v6.9.0
         with:
-          # context:    .containers/${{ matrix.role }}
           context:    "{{defaultContext}}:.containers/${{ matrix.role }}"
-          # file:       .containers/${{ matrix.role }}/Containerfile
           file:       Containerfile
           # platforms: linux/amd64,linux/arm64
           platforms:  linux/amd64
