@@ -106,6 +106,7 @@ RUN find /usr/lib/php -type f -name '*.so*' -exec lddtree --copy-to-tree /rootfs
 RUN mkdir -p /rootfs/var/www/html && chown www-data:www-data /rootfs/var/www/html
 
 RUN ln -s /dev/shm /rootfs/run/shm
+RUN mkdir -p /rootfs/var/log/
 RUN touch /rootfs/var/log/php8.3-fpm.log && chown www-data:www-data /rootfs/var/log/php8.3-fpm.log
 RUN chown www-data:www-data /rootfs/run/php
 
