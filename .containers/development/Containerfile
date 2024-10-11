@@ -90,6 +90,7 @@ RUN echo 'developer ALL=(ALL:ALL) NOPASSWD: ALL' | tee /etc/sudoers.d/developer
 COPY --chown=www-data:www-data rootfs/home/developer/.vimrc /home/developer/.vimrc
 COPY rootfs/etc/profile.d/* /etc/profile.d/
 RUN cat /etc/profile.d/PS1.sh | tee -a /home/developer/.bashrc
+RUN cat /etc/profile.d/PS1.sh | tee -a /home/developer/.profile
 
 USER developer
 WORKDIR /home/developer
