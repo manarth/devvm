@@ -117,6 +117,7 @@ COPY --from=build /rootfs/             /
 COPY --from=build /etc/group           /etc/group
 COPY --from=build /etc/passwd          /etc/passwd
 COPY --from=build /etc/php/            /etc/php/
+COPY --from=build /etc/ssl             /etc/ssl
 COPY --from=build /usr/lib/php         /usr/lib/php
 COPY --from=build /usr/sbin/php-fpm8.3 /usr/sbin/php-fpm8.3
 COPY --from=build /usr/sbin/phpquery   /usr/sbin/phpquery
