@@ -105,6 +105,10 @@ RUN mkdir -p /rootfs/var/log/
 RUN mkdir -p /rootfs/run/php && chown www-data:www-data /rootfs/run/php
 RUN touch /rootfs/var/log/php8.3-fpm.log && chown www-data:www-data /rootfs/var/log/php8.3-fpm.log
 
+# Install CA certificates so PHP can fetch remote content.
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    ca-certificates
+
 FROM scratch
 LABEL role=phpfpm
 LABEL version=8.3
