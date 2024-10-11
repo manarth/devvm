@@ -56,7 +56,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     php8.3-pcov \
     php8.3-ps \
     php8.3-pspell \
-    php8.3-psr \
     php8.3-readline \
     php8.3-redis \
     php8.3-smbclient \
