@@ -73,27 +73,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     pax-utils rsync
 
-# Prep the packaged directories.
-RUN mkdir -p /rootfs/etc
-RUN mkdir -p /rootfs/run/php
-RUN mkdir -p /rootfs/usr/lib
-RUN mkdir -p /rootfs/var/log
-
-# Prepare special-mode directories.
-RUN mkdir -p -m 1777 /rootfs/tmp
-RUN mkdir -p -m 1777 /rootfs/run/lock
-RUN mkdir -p -m 1777 /rootfs/var/tmp
-
-# Package default files/symlinks.
-RUN cp    /etc/group   /rootfs/etc/group
-RUN cp    /etc/passwd  /rootfs/etc/passwd
-RUN cp -r /usr/lib64   /rootfs/usr/lib64
-
-RUN ln -s usr/lib      /rootfs/lib
-RUN ln -s usr/lib64    /rootfs/lib64
-RUN ln -s /run         /rootfs/var/run
-RUN ln -s /run/lock    /rootfs/var/lock
-
 # Package up required shell utilities.
 RUN ln -s usr/bin /rootfs/bin
 RUN mkdir -p /rootfs/usr/bin
@@ -129,7 +108,6 @@ RUN mkdir -p /rootfs/var/www/html && chown www-data:www-data /rootfs/var/www/htm
 RUN ln -s /dev/shm /rootfs/run/shm
 RUN touch /rootfs/var/log/php8.3-fpm.log && chown www-data:www-data /rootfs/var/log/php8.3-fpm.log
 RUN chown www-data:www-data /rootfs/run/php
-
 
 FROM scratch
 LABEL role=phpfpm
