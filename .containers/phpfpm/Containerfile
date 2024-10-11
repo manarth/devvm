@@ -107,8 +107,8 @@ RUN mkdir -p /rootfs/var/www/html && chown www-data:www-data /rootfs/var/www/htm
 
 RUN ln -s /dev/shm /rootfs/run/shm
 RUN mkdir -p /rootfs/var/log/
+RUN mkdir -p /rootfs/run/php && chown www-data:www-data /rootfs/run/php
 RUN touch /rootfs/var/log/php8.3-fpm.log && chown www-data:www-data /rootfs/var/log/php8.3-fpm.log
-RUN chown www-data:www-data /rootfs/run/php
 
 FROM scratch
 LABEL role=phpfpm
