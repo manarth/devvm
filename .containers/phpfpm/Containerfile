@@ -1,5 +1,20 @@
 FROM ubuntu:24.04 AS build
 
+# Prep the packaged directories.
+RUN mkdir -p /rootfs/etc
+RUN mkdir -p /rootfs/run
+RUN mkdir -p /rootfs/usr/lib
+
+# Prepare special-mode directories.
+RUN mkdir -p -m 1777 /rootfs/tmp
+RUN mkdir -p -m 1777 /rootfs/run/lock
+RUN mkdir -p -m 1777 /rootfs/var/tmp
+
+# Package default symlinks.
+RUN ln -s usr/lib   /rootfs/lib
+RUN ln -s /run      /rootfs/var/run
+RUN ln -s /run/lock /rootfs/var/lock
+
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     php8.3-apcu \
@@ -56,7 +71,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     php8.3-zmq
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-    rsync
+    pax-utils rsync
 
 # Prep the packaged directories.
 RUN mkdir -p /rootfs/etc
@@ -97,16 +112,17 @@ RUN cp --parents /usr/bin/awk \
                  /usr/bin/stat \
                  /usr/bin/update-alternatives \
                  /rootfs
+# Package up binaries.
+RUN cp --parents /usr/sbin/php-fpm8.3 \
+                 /usr/sbin/phpdismod \
+                 /usr/sbin/phpenmod \
+                 /usr/sbin/phpquery \
+                 /rootfs
 
 # Package up the libraries.
-RUN cp -r --parents /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /rootfs
-RUN cp -r --parents /usr/lib/php /rootfs
-RUN ldd /usr/sbin/php-fpm8.3                                   | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
-RUN find /usr/lib/php/ -type f -name '*.so*' -exec ldd '{}' \; | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
-RUN find /rootfs/usr/bin/ -type f            -exec ldd '{}' \; | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
-
-# Resolve missing symlinks
-RUN find /rootfs -xtype l -exec readlink -f '{}' \; |sed -E 's@^/rootfs@@' | awk 'NF == 1 {system("rsync --links --perms --times --ignore-existing --relative " $1 " /rootfs") }'
+RUN find /rootfs/usr/bin -type f -exec lddtree --copy-to-tree /rootfs '{}' \;
+RUN find /rootfs/usr/sbin -type f -exec lddtree --copy-to-tree /rootfs '{}' \;
+RUN find /usr/lib/php -type f -name '*.so*' -exec lddtree --copy-to-tree /rootfs '{}' \;
 
 RUN mkdir -p /rootfs/var/www/html && chown www-data:www-data /rootfs/var/www/html
 

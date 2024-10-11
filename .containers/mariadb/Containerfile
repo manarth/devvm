@@ -1,41 +1,36 @@
 FROM ubuntu:24.04 AS build
 
-RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-    mariadb-server
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-    rsync
-
 # Prep the packaged directories.
 RUN mkdir -p /rootfs/etc
 RUN mkdir -p /rootfs/run
 RUN mkdir -p /rootfs/usr/lib
-RUN mkdir -p /rootfs/var/log/mariadb
 
 # Prepare special-mode directories.
 RUN mkdir -p -m 1777 /rootfs/tmp
 RUN mkdir -p -m 1777 /rootfs/run/lock
 RUN mkdir -p -m 1777 /rootfs/var/tmp
 
-# Package default files/symlinks.
-RUN cp    /etc/group   /rootfs/etc/group
-RUN cp    /etc/passwd  /rootfs/etc/passwd
-RUN cp -r /usr/lib64   /rootfs/usr/lib64
+# Package default symlinks.
+RUN ln -s usr/lib   /rootfs/lib
+RUN ln -s /run      /rootfs/var/run
+RUN ln -s /run/lock /rootfs/var/lock
 
-RUN ln -s usr/lib      /rootfs/lib
-RUN ln -s usr/lib64    /rootfs/lib64
-RUN ln -s /run         /rootfs/var/run
-RUN ln -s /run/lock    /rootfs/var/lock
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    mariadb-server
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    pax-utils rsync
+
+# Package up binaries.
+RUN cp --parents /usr/sbin/mariadbd   /rootfs
+RUN cp --parents /usr/bin/mysql* \
+                 /usr/bin/mariadb* \
+                 rootfs
 
 # Package up the libraries.
-RUN cp -r --parents /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /rootfs
-
-RUN ldd /usr/sbin/mariadbd                                         | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
-RUN find /usr/bin/ -type f -name 'mariadb*' -exec ldd '{}' \; | awk 'NF == 4 { system("rsync --links --perms --times --ignore-existing --relative " $3 " /rootfs") }'
-
-# Resolve missing symlinks
-RUN find /rootfs -xtype l -exec readlink -f '{}' \; |sed -E 's@^/rootfs@@' | awk 'NF == 1 {system("rsync --links --perms --times --ignore-existing --relative " $1 " /rootfs") }'
+RUN find /rootfs/usr/bin -type f -exec lddtree --copy-to-tree /rootfs '{}' \;
+RUN find /rootfs/usr/sbin -type f -exec lddtree --copy-to-tree /rootfs '{}' \;
 
 RUN mkdir -p /rootfs/run/mysqld && chown mysql /rootfs/run/mysqld
 RUN mkdir -p /rootfs/var/lib/mysql && chown mysql:mysql /rootfs/var/lib/mysql
@@ -45,11 +40,10 @@ LABEL role=mariadb
 # LABEL version=1.6.24
 
 COPY --from=build /rootfs              /
+COPY --from=build /etc/group           /etc/group
 COPY --from=build /etc/mysql           /etc/mysql
-COPY --from=build /usr/bin/mariadb*    /usr/bin
-COPY --from=build /usr/bin/mysql*      /usr/bin
+COPY --from=build /etc/passwd          /etc/passwd
 COPY --from=build /usr/lib/mysql       /usr/lib/mysql
-COPY --from=build /usr/sbin/mariadbd   /usr/sbin/mariadbd
 COPY --from=build /usr/share/mysql     /usr/share/mysql
 COPY --from=build /var/lib/mysql       /var/lib/mysql
 
