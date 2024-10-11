@@ -8,14 +8,17 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     git \
     iputils-ping \
     jq \
+    jsonlint \
     openssh-client \
     patch \
     plocate \
     rsync \
     sudo \
     telnet \
+    unzip \
     vim \
     wget \
+    xz-utils \
     yamllint \
     zip
 
@@ -74,6 +77,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     php8.3-yaml \
     php8.3-zip \
     php8.3-zmq
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    composer
 
 # Create the 'developer' user.
 RUN adduser --shell /bin/bash developer
