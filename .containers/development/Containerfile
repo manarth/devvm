@@ -86,7 +86,7 @@ RUN usermod -aG www-data developer
 RUN echo 'developer ALL=(ALL:ALL) NOPASSWD: ALL' | tee /etc/sudoers.d/developer
 
 # Configure preferences.
-COPY rootfs/home/developer/.vimrc /home/developer/.vimrc
+COPY --chown=www-data:www-data rootfs/home/developer/.vimrc /home/developer/.vimrc
 COPY rootfs/etc/profile.d/* /etc/profile.d/
 RUN cat /etc/profile.d/PS1.sh | tee -a /home/developer/.bashrc
 
