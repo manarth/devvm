@@ -23,7 +23,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     clamav \
     mysql-client \
     nodejs \
-    npm \
+    npm
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     php8.3-cli \
