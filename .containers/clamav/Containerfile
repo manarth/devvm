@@ -1,0 +1,62 @@
+FROM ubuntu:24.04 AS build
+
+# Prep the packaged directories.
+RUN mkdir -p /rootfs/etc
+RUN mkdir -p /rootfs/run
+RUN mkdir -p /rootfs/usr/lib
+
+# Prepare special-mode directories.
+RUN mkdir -p -m 1777 /rootfs/tmp
+RUN mkdir -p -m 1777 /rootfs/run/lock
+RUN mkdir -p -m 1777 /rootfs/var/tmp
+
+# Package default symlinks.
+RUN ln -s usr/lib   /rootfs/lib
+RUN ln -s /run      /rootfs/var/run
+RUN ln -s /run/lock /rootfs/var/lock
+
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    clamav clamav-daemon
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    pax-utils rsync
+
+# Package up binaries.
+RUN ln -s usr/bin /rootfs/bin
+RUN mkdir -p /rootfs/usr/bin
+RUN cp --parents /usr/bin/clambc \
+                 /usr/bin/clamconf \
+                 /usr/bin/clamdtop \
+                 /usr/bin/clamscan \
+                 /usr/bin/clamsubmit \
+                 /usr/bin/freshclam \
+                 rootfs
+RUN cp --parents /usr/sbin/clamd \
+                 /usr/sbin/clamonacc \
+                 rootfs
+
+RUN find /rootfs/usr/bin -type f -exec lddtree --copy-to-tree /rootfs '{}' \;
+RUN find /rootfs/usr/sbin -type f -exec lddtree --copy-to-tree /rootfs '{}' \;
+
+RUN mkdir -p /rootfs/var/lib/clamav && chown clamav:clamav /rootfs/var/lib/clamav
+RUN mkdir -p /rootfs/var/log/clamav && chown clamav:clamav /rootfs/var/log/clamav
+
+# Install initial database.
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    ca-certificates
+RUN freshclam
+
+FROM scratch
+LABEL role=clamav
+LABEL version=1.0.7
+
+COPY --from=build /rootfs              /
+COPY --from=build /etc/clamav          /etc/clamav
+COPY --from=build /etc/group           /etc/group
+COPY --from=build /etc/passwd          /etc/passwd
+COPY --from=build /var/lib/clamav      /var/lib/clamav
+
+EXPOSE 3310
+
+ENTRYPOINT [ "/usr/sbin/clamd", "--foreground"]

@@ -7,6 +7,12 @@ services:
       context: .containers/apache2
       dockerfile: Containerfile
 
+  clamav:
+    container_name: clamav
+    build:
+      context: .containers/clamav
+      dockerfile: Containerfile
+
   development:
     container_name: development
     build:
