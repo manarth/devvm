@@ -21,6 +21,7 @@ jobs:
       matrix:
         role:
           - apache2
+          - clamav
           - development
           - mariadb
           - memcached
