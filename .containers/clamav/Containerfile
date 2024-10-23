@@ -41,6 +41,7 @@ RUN find /rootfs/usr/sbin -type f -exec lddtree --copy-to-tree /rootfs '{}' \;
 
 RUN mkdir -p /rootfs/var/lib/clamav && chown clamav:clamav /rootfs/var/lib/clamav
 RUN mkdir -p /rootfs/var/log/clamav && chown clamav:clamav /rootfs/var/log/clamav
+RUN mkdir -p /rootfs/var/run/clamav && chown clamav:clamav /rootfs/var/run/clamav
 
 # Install initial database.
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
