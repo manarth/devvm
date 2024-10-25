@@ -25,7 +25,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     pax-utils rsync
 
 # Package up binaries.
-RUN ln -s usr/bin /rootfs/bin
 RUN mkdir -p /rootfs/usr/bin
 RUN cp --parents /usr/bin/clambc \
                  /usr/bin/clamconf \
