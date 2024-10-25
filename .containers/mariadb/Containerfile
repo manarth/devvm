@@ -11,7 +11,9 @@ RUN mkdir -p -m 1777 /rootfs/run/lock
 RUN mkdir -p -m 1777 /rootfs/var/tmp
 
 # Package default symlinks.
+RUN ln -s usr/bin   /rootfs/bin
 RUN ln -s usr/lib   /rootfs/lib
+RUN ln -s usr/sbin  /rootfs/sbin
 RUN ln -s /run      /rootfs/var/run
 RUN ln -s /run/lock /rootfs/var/lock
 
@@ -24,7 +26,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
 
 # Package up binaries.
 RUN cp --parents /usr/sbin/mariadbd   /rootfs
-RUN cp --parents /usr/bin/mysql* \
+RUN cp --parents /usr/bin/sh \
+                 /usr/bin/mysql* \
                  /usr/bin/mariadb* \
                  rootfs
 
