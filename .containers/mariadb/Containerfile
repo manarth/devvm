@@ -27,8 +27,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
 # Package up binaries.
 RUN cp --parents /usr/sbin/mariadbd   /rootfs
 RUN cp --parents /usr/bin/sh \
-                 /usr/bin/mysql* \
                  /usr/bin/mariadb* \
+                 /usr/bin/mysql* \
+                 /usr/bin/my_print_defaults \
                  rootfs
 
 # Package up the libraries.
