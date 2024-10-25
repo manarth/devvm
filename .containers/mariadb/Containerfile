@@ -46,13 +46,14 @@ FROM scratch
 LABEL role=mariadb
 # LABEL version=1.6.24
 
-COPY --from=build /rootfs              /
-COPY --from=build /etc/group           /etc/group
-COPY --from=build /etc/mysql           /etc/mysql
-COPY --from=build /etc/passwd          /etc/passwd
-COPY --from=build /usr/lib/mysql       /usr/lib/mysql
-COPY --from=build /usr/share/mysql     /usr/share/mysql
-COPY --from=build /var/lib/mysql       /var/lib/mysql
+COPY --from=build /rootfs                   /
+COPY --from=build /etc/alternatives/my.cnf  /etc/alternatives/my.cnf
+COPY --from=build /etc/group                /etc/group
+COPY --from=build /etc/mysql                /etc/mysql
+COPY --from=build /etc/passwd               /etc/passwd
+COPY --from=build /usr/lib/mysql            /usr/lib/mysql
+COPY --from=build /usr/share/mysql          /usr/share/mysql
+COPY --from=build /var/lib/mysql            /var/lib/mysql
 
 EXPOSE 3306
 USER mysql
