@@ -54,10 +54,10 @@ RUN cp --parents /etc/mime.types /rootfs
 RUN mkdir -p /rootfs/run/apache2 && chown www-data:www-data /rootfs/run/apache2
 RUN mkdir -p /rootfs/var/www/html && chown www-data:www-data /rootfs/var/www/html
 
-# Redirect default logs to stdout/stderr.
+# Redirect default logs to stdout.
 RUN mkdir -p /rootfs/var/log/apache2 && chown www-data:www-data /rootfs/var/log/apache2
 RUN ln -sf /dev/stdout /rootfs/var/log/apache2/access.log && \
-    ln -sf /dev/stderr /rootfs/var/log/apache2/error.log
+    ln -sf /dev/stdout /rootfs/var/log/apache2/error.log
 
 FROM scratch
 LABEL role=apache2
