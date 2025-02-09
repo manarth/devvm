@@ -96,4 +96,4 @@ RUN cat /etc/profile.d/PS1.sh | tee -a /home/developer/.profile
 USER developer
 WORKDIR /home/developer
 
-CMD [ "sleep", "infinity" ]
+ENTRYPOINT ["/bin/bash", "-c", "trap \"exit 0\" SIGTERM SIGINT SIGKILL; /bin/sleep infinity & wait"]
