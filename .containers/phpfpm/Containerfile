@@ -78,6 +78,7 @@ RUN cp --parents /usr/bin/awk \
                  /usr/bin/cp \
                  /usr/bin/find \
                  /usr/bin/id \
+                 /usr/bin/ln \
                  /usr/bin/ls \
                  /usr/bin/mkdir \
                  /usr/bin/mktemp \
