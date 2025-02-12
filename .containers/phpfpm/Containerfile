@@ -75,6 +75,7 @@ RUN cp --parents /usr/bin/awk \
                  /usr/bin/cat \
                  /usr/bin/chown \
                  /usr/bin/chmod \
+                 /usr/bin/cp \
                  /usr/bin/find \
                  /usr/bin/id \
                  /usr/bin/ls \
